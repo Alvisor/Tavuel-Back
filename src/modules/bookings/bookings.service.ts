@@ -30,8 +30,8 @@ export class BookingsService {
     });
   }
 
-  async findByUser(userId: string) {
-    return this.prisma.booking.findMany({ where: { userId } });
+  async findByUser(clientId: string) {
+    return this.prisma.booking.findMany({ where: { clientId } });
   }
 
   async findByProvider(providerId: string) {

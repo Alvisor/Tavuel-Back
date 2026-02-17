@@ -27,6 +27,9 @@ export class ServicesService {
   }
 
   async findByProvider(providerId: string) {
-    return this.prisma.service.findMany({ where: { providerId } });
+    return this.prisma.providerService.findMany({
+      where: { providerId },
+      include: { service: true },
+    });
   }
 }

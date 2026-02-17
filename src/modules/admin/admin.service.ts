@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { UserStatus, VerificationStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -19,7 +20,7 @@ export class AdminService {
     return this.prisma.user.findMany();
   }
 
-  async updateUserStatus(userId: string, status: string) {
+  async updateUserStatus(userId: string, status: UserStatus) {
     return this.prisma.user.update({
       where: { id: userId },
       data: { status },
@@ -30,10 +31,13 @@ export class AdminService {
     return this.prisma.provider.findMany();
   }
 
-  async updateProviderStatus(providerId: string, status: string) {
+  async updateProviderStatus(
+    providerId: string,
+    verificationStatus: VerificationStatus,
+  ) {
     return this.prisma.provider.update({
       where: { id: providerId },
-      data: { status },
+      data: { verificationStatus },
     });
   }
 

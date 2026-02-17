@@ -31,11 +31,14 @@ async function bootstrap() {
   );
 
   // CORS
+  const isProduction = configService.get<string>('NODE_ENV') === 'production';
   app.enableCors({
-    origin: [
-      configService.get<string>('FRONTEND_URL', 'http://localhost:3001'),
-      configService.get<string>('APP_URL', 'http://localhost:8080'),
-    ],
+    origin: isProduction
+      ? [
+          configService.get<string>('FRONTEND_URL', 'http://localhost:3001'),
+          configService.get<string>('APP_URL', 'http://localhost:8080'),
+        ]
+      : true,
     credentials: true,
   });
 

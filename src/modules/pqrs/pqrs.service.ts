@@ -6,21 +6,21 @@ export class PqrsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: any) {
-    // TODO: implement PQRS ticket creation
-    return this.prisma.pqrs.create({ data });
+    // TODO: implement PQRS ticket creation with radicado generation
+    return this.prisma.pqrsTicket.create({ data });
   }
 
   async findAll(query: any) {
     // TODO: implement with pagination, status, and type filters
-    return this.prisma.pqrs.findMany();
+    return this.prisma.pqrsTicket.findMany();
   }
 
   async findOne(id: string) {
-    return this.prisma.pqrs.findUnique({ where: { id } });
+    return this.prisma.pqrsTicket.findUnique({ where: { id } });
   }
 
   async update(id: string, data: any) {
-    return this.prisma.pqrs.update({ where: { id }, data });
+    return this.prisma.pqrsTicket.update({ where: { id }, data });
   }
 
   async addResponse(id: string, responseData: any) {
@@ -29,13 +29,13 @@ export class PqrsService {
   }
 
   async close(id: string) {
-    return this.prisma.pqrs.update({
+    return this.prisma.pqrsTicket.update({
       where: { id },
-      data: { status: 'CLOSED' },
+      data: { status: 'CLOSED', closedAt: new Date() },
     });
   }
 
-  async findByUser(userId: string) {
-    return this.prisma.pqrs.findMany({ where: { userId } });
+  async findByUser(createdById: string) {
+    return this.prisma.pqrsTicket.findMany({ where: { createdById } });
   }
 }

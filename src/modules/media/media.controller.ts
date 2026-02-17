@@ -6,11 +6,15 @@ import {
   Param,
   Query,
   UseGuards,
-  UseInterceptors,
-  UploadedFile,
+  Req,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { MediaService } from './media.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ParseUuidPipe } from '../../common/pipes/parse-uuid.pipe';
@@ -24,11 +28,11 @@ export class MediaController {
 
   @Post('upload')
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Upload a file' })
   @ApiResponse({ status: 201, description: 'File uploaded' })
-  async upload(@UploadedFile() file: any) {
-    return this.mediaService.upload(file, {});
+  async upload(@Req() req: any) {
+    // TODO: Implement multipart file upload with @fastify/multipart
+    return this.mediaService.upload(req, {});
   }
 
   @Get()

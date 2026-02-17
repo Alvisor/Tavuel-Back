@@ -71,10 +71,10 @@ export class ReviewsController {
     return this.reviewsService.findByProvider(providerId);
   }
 
-  @Get('service/:serviceId')
-  @ApiOperation({ summary: 'Get reviews by service' })
-  @ApiResponse({ status: 200, description: 'Service reviews' })
-  async findByService(@Param('serviceId', ParseUuidPipe) serviceId: string) {
-    return this.reviewsService.findByService(serviceId);
+  @Get('booking/:bookingId')
+  @ApiOperation({ summary: 'Get review by booking' })
+  @ApiResponse({ status: 200, description: 'Booking review' })
+  async findByBooking(@Param('bookingId', ParseUuidPipe) bookingId: string) {
+    return this.reviewsService.findByBooking(bookingId);
   }
 }

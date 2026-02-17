@@ -20,14 +20,14 @@ export class NotificationsService {
   async markAsRead(id: string) {
     return this.prisma.notification.update({
       where: { id },
-      data: { read: true },
+      data: { isRead: true, readAt: new Date() },
     });
   }
 
   async markAllAsRead(userId: string) {
     return this.prisma.notification.updateMany({
-      where: { userId, read: false },
-      data: { read: true },
+      where: { userId, isRead: false },
+      data: { isRead: true, readAt: new Date() },
     });
   }
 
@@ -37,7 +37,7 @@ export class NotificationsService {
 
   async getUnreadCount(userId: string) {
     return this.prisma.notification.count({
-      where: { userId, read: false },
+      where: { userId, isRead: false },
     });
   }
 }

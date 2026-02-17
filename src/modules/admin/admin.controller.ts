@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { UserStatus, VerificationStatus } from '@prisma/client';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -41,7 +42,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'User status updated' })
   async updateUserStatus(
     @Param('id', ParseUuidPipe) id: string,
-    @Body('status') status: string,
+    @Body('status') status: UserStatus,
   ) {
     return this.adminService.updateUserStatus(id, status);
   }
@@ -58,7 +59,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Provider status updated' })
   async updateProviderStatus(
     @Param('id', ParseUuidPipe) id: string,
-    @Body('status') status: string,
+    @Body('status') status: VerificationStatus,
   ) {
     return this.adminService.updateProviderStatus(id, status);
   }

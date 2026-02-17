@@ -30,7 +30,7 @@ export class ReviewsService {
     return this.prisma.review.findMany({ where: { providerId } });
   }
 
-  async findByService(serviceId: string) {
-    return this.prisma.review.findMany({ where: { serviceId } });
+  async findByBooking(bookingId: string) {
+    return this.prisma.review.findUnique({ where: { bookingId } });
   }
 }
