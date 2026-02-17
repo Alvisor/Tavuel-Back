@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -166,6 +167,138 @@ export class AuthService {
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException('Invalid or expired reset token');
     }
+  }
+
+  async googleSignIn(idToken: string) {
+    const googleClientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+    const client = new OAuth2Client(googleClientId);
+
+    let payload;
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken,
+        audience: googleClientId,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Invalid Google token');
+    }
+
+    if (!payload || !payload.email) {
+      throw new UnauthorizedException('Invalid Google token payload');
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email;
+    const firstName = payload.given_name || payload.name || 'Usuario';
+    const lastName = payload.family_name || '';
+    const avatarUrl = payload.picture || null;
+
+    // Check if this Google account is already linked
+    const existingSocial = await this.prisma.socialAccount.findUnique({
+      where: { provider_providerId: { provider: 'GOOGLE', providerId: googleId } },
+      include: { user: true },
+    });
+
+    if (existingSocial) {
+      const user = existingSocial.user;
+
+      if (user.status !== 'ACTIVE') {
+        throw new UnauthorizedException('Account is not active');
+      }
+
+      const tokens = await this.generateTokens(user.id, user.email, user.role);
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          role: user.role,
+          avatarUrl: user.avatarUrl,
+        },
+        ...tokens,
+      };
+    }
+
+    // Check if a user with this email already exists (link accounts)
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      // Link Google account to existing user
+      await this.prisma.socialAccount.create({
+        data: {
+          userId: existingUser.id,
+          provider: 'GOOGLE',
+          providerId: googleId,
+          email,
+        },
+      });
+
+      // Update avatar if user doesn't have one
+      if (!existingUser.avatarUrl && avatarUrl) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { avatarUrl },
+        });
+      }
+
+      const tokens = await this.generateTokens(
+        existingUser.id,
+        existingUser.email,
+        existingUser.role,
+      );
+      return {
+        user: {
+          id: existingUser.id,
+          email: existingUser.email,
+          firstName: existingUser.firstName,
+          lastName: existingUser.lastName,
+          phone: existingUser.phone,
+          role: existingUser.role,
+          avatarUrl: existingUser.avatarUrl || avatarUrl,
+        },
+        ...tokens,
+      };
+    }
+
+    // Create new user + social account
+    const newUser = await this.prisma.user.create({
+      data: {
+        email,
+        firstName,
+        lastName,
+        avatarUrl,
+        socialAccounts: {
+          create: {
+            provider: 'GOOGLE',
+            providerId: googleId,
+            email,
+          },
+        },
+      },
+    });
+
+    const tokens = await this.generateTokens(
+      newUser.id,
+      newUser.email,
+      newUser.role,
+    );
+    return {
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        phone: newUser.phone,
+        role: newUser.role,
+        avatarUrl: newUser.avatarUrl,
+      },
+      ...tokens,
+    };
   }
 
   private async generateTokens(userId: string, email: string, role: string) {

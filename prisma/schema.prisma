@@ -178,7 +178,7 @@ model User {
   passwordHash  String?
   firstName     String
   lastName      String
-  phone         String     @unique
+  phone         String?    @unique
   phoneVerified Boolean    @default(false)
   avatarUrl     String?
   role          UserRole   @default(CLIENT)
