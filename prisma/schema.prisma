@@ -49,6 +49,8 @@ enum DocumentType {
   SELFIE_WITH_CEDULA
   RUT
   CERTIFICATION
+  ANTECEDENTES
+  BANK_CERTIFICATE
 }
 
 enum DocumentStatus {
@@ -67,6 +69,8 @@ enum BackgroundCheckStatus {
 enum BankAccountType {
   SAVINGS
   CHECKING
+  NEQUI
+  DAVIPLATA
 }
 
 enum DocumentIdType {
@@ -181,10 +185,12 @@ model User {
   phone         String?    @unique
   phoneVerified Boolean    @default(false)
   avatarUrl     String?
-  role          UserRole   @default(CLIENT)
-  status        UserStatus @default(ACTIVE)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  role               UserRole   @default(CLIENT)
+  status             UserStatus @default(ACTIVE)
+  wantsToBeProvider  Boolean    @default(false)
+  activeMode         UserRole   @default(CLIENT)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   // Relations
   socialAccounts SocialAccount[]
@@ -333,6 +339,7 @@ model ServiceCategory {
   updatedAt   DateTime @updatedAt
 
   services Service[]
+  bookings Booking[]
 
   @@map("service_categories")
 }
@@ -374,8 +381,9 @@ model ProviderService {
 model Booking {
   id                String        @id @default(uuid()) @db.Uuid
   clientId          String        @db.Uuid
-  providerId        String        @db.Uuid
-  serviceId         String        @db.Uuid
+  providerId        String?       @db.Uuid
+  serviceId         String?       @db.Uuid
+  categoryId        String?       @db.Uuid
   status            BookingStatus @default(REQUESTED)
   address           String
   latitude          Decimal       @db.Decimal(10, 7)
@@ -396,8 +404,9 @@ model Booking {
 
   // Relations
   client        User                   @relation("ClientBookings", fields: [clientId], references: [id])
-  provider      Provider               @relation("ProviderBookings", fields: [providerId], references: [id])
-  service       Service                @relation(fields: [serviceId], references: [id])
+  provider      Provider?              @relation("ProviderBookings", fields: [providerId], references: [id])
+  service       Service?               @relation(fields: [serviceId], references: [id])
+  category      ServiceCategory?       @relation(fields: [categoryId], references: [id])
   statusHistory BookingStatusHistory[]
   payment       Payment?
   evidences     Evidence[]

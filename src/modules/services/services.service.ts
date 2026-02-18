@@ -32,4 +32,17 @@ export class ServicesService {
       include: { service: true },
     });
   }
+
+  async findCategories() {
+    return this.prisma.serviceCategory.findMany({
+      where: { isActive: true },
+      include: {
+        services: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
 }

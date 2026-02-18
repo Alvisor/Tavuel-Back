@@ -5,8 +5,10 @@ import {
   MinLength,
   MaxLength,
   Matches,
+  IsBoolean,
+  IsOptional,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
   @ApiProperty({ example: 'usuario@email.com' })
@@ -37,4 +39,9 @@ export class RegisterDto {
     message: 'Phone must be a valid Colombian number (+57XXXXXXXXXX)',
   })
   phone: string;
+
+  @ApiPropertyOptional({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  wantsToBeProvider?: boolean;
 }

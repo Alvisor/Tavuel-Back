@@ -2,8 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Patch,
-  Delete,
   Param,
   Body,
   Query,
@@ -11,7 +9,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { ReviewQueryDto } from './dto/review-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ParseUuidPipe } from '../../common/pipes/parse-uuid.pipe';
 
 @ApiTags('Reviews')
@@ -22,59 +23,38 @@ export class ReviewsController {
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Create a review' })
+  @ApiOperation({ summary: 'Create a review for a completed booking' })
   @ApiResponse({ status: 201, description: 'Review created' })
-  async create(@Body() body: any) {
-    return this.reviewsService.create(body);
-  }
-
-  @Get()
-  @ApiOperation({ summary: 'Get all reviews' })
-  @ApiResponse({ status: 200, description: 'List of reviews' })
-  async findAll(@Query() query: any) {
-    return this.reviewsService.findAll(query);
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get review by ID' })
-  @ApiResponse({ status: 200, description: 'Review found' })
-  @ApiResponse({ status: 404, description: 'Review not found' })
-  async findOne(@Param('id', ParseUuidPipe) id: string) {
-    return this.reviewsService.findOne(id);
-  }
-
-  @Patch(':id')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Update review' })
-  @ApiResponse({ status: 200, description: 'Review updated' })
-  async update(
-    @Param('id', ParseUuidPipe) id: string,
-    @Body() body: any,
+  async create(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateReviewDto,
   ) {
-    return this.reviewsService.update(id, body);
+    return this.reviewsService.create(userId, dto);
   }
 
-  @Delete(':id')
+  @Get('me')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Delete review' })
-  @ApiResponse({ status: 200, description: 'Review deleted' })
-  async remove(@Param('id', ParseUuidPipe) id: string) {
-    return this.reviewsService.remove(id);
+  @ApiOperation({ summary: 'Get my reviews as client' })
+  @ApiResponse({ status: 200, description: 'My reviews' })
+  async getMyReviews(@CurrentUser('id') userId: string) {
+    return this.reviewsService.findByClient(userId);
   }
 
-  @Get('provider/:providerId')
-  @ApiOperation({ summary: 'Get reviews by provider' })
+  @Get('provider/:id')
+  @ApiOperation({ summary: 'Get reviews for a provider' })
   @ApiResponse({ status: 200, description: 'Provider reviews' })
-  async findByProvider(@Param('providerId', ParseUuidPipe) providerId: string) {
-    return this.reviewsService.findByProvider(providerId);
+  async findByProvider(
+    @Param('id', ParseUuidPipe) providerId: string,
+    @Query() query: ReviewQueryDto,
+  ) {
+    return this.reviewsService.findByProvider(providerId, query);
   }
 
-  @Get('booking/:bookingId')
-  @ApiOperation({ summary: 'Get review by booking' })
-  @ApiResponse({ status: 200, description: 'Booking review' })
-  async findByBooking(@Param('bookingId', ParseUuidPipe) bookingId: string) {
-    return this.reviewsService.findByBooking(bookingId);
+  @Get('provider/:id/stats')
+  @ApiOperation({ summary: 'Get rating statistics for a provider' })
+  @ApiResponse({ status: 200, description: 'Provider rating stats' })
+  async getProviderStats(@Param('id', ParseUuidPipe) providerId: string) {
+    return this.reviewsService.getProviderStats(providerId);
   }
 }

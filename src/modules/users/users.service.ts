@@ -19,6 +19,8 @@ const USER_SELECT = {
   avatarUrl: true,
   role: true,
   status: true,
+  wantsToBeProvider: true,
+  activeMode: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -148,5 +150,30 @@ export class UsersService {
       where: { email },
       select: USER_SELECT,
     });
+  }
+
+  async toggleMode(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { provider: { select: { verificationStatus: true } } },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role !== 'PROVIDER') {
+      throw new ForbiddenException('Only approved providers can toggle mode');
+    }
+
+    const newMode = user.activeMode === 'CLIENT' ? 'PROVIDER' : 'CLIENT';
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { activeMode: newMode as any },
+      select: { ...USER_SELECT, activeMode: true },
+    });
+
+    return updated;
   }
 }

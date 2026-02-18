@@ -44,6 +44,7 @@ export class AuthService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         phone: dto.phone,
+        wantsToBeProvider: dto.wantsToBeProvider || false,
       },
     });
 
@@ -57,6 +58,7 @@ export class AuthService {
         lastName: user.lastName,
         phone: user.phone,
         role: user.role,
+        wantsToBeProvider: user.wantsToBeProvider,
       },
       ...tokens,
     };

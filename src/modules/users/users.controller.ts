@@ -50,6 +50,13 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  @Patch('me/toggle-mode')
+  @ApiOperation({ summary: 'Toggle between client/provider mode' })
+  @ApiResponse({ status: 200, description: 'Mode toggled' })
+  async toggleMode(@CurrentUser('id') userId: string) {
+    return this.usersService.toggleMode(userId);
+  }
+
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated' })

@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
   Patch,
   Param,
   Body,
@@ -13,6 +12,7 @@ import { VerificationService } from './verification.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ParseUuidPipe } from '../../common/pipes/parse-uuid.pipe';
 
 @ApiTags('Verification')
@@ -22,28 +22,20 @@ import { ParseUuidPipe } from '../../common/pipes/parse-uuid.pipe';
 export class VerificationController {
   constructor(private readonly verificationService: VerificationService) {}
 
-  @Post(':providerId/submit')
-  @ApiOperation({ summary: 'Submit provider verification documents' })
-  @ApiResponse({ status: 201, description: 'Verification submitted' })
-  async submit(
-    @Param('providerId', ParseUuidPipe) providerId: string,
-    @Body() body: any,
-  ) {
-    return this.verificationService.submitVerification(providerId, body);
-  }
-
   @Get()
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
-  @ApiOperation({ summary: 'Get all verification requests' })
+  @ApiOperation({ summary: 'List pending verification requests' })
   @ApiResponse({ status: 200, description: 'List of verification requests' })
   async findAll(@Query() query: any) {
     return this.verificationService.findAll(query);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get verification by ID' })
-  @ApiResponse({ status: 200, description: 'Verification found' })
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get provider verification details' })
+  @ApiResponse({ status: 200, description: 'Verification details' })
   async findOne(@Param('id', ParseUuidPipe) id: string) {
     return this.verificationService.findOne(id);
   }
@@ -51,11 +43,11 @@ export class VerificationController {
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
-  @ApiOperation({ summary: 'Approve verification request' })
+  @ApiOperation({ summary: 'Approve provider verification' })
   @ApiResponse({ status: 200, description: 'Verification approved' })
   async approve(
     @Param('id', ParseUuidPipe) id: string,
-    @Body('reviewerId') reviewerId: string,
+    @CurrentUser('id') reviewerId: string,
   ) {
     return this.verificationService.approve(id, reviewerId);
   }
@@ -63,11 +55,11 @@ export class VerificationController {
   @Patch(':id/reject')
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
-  @ApiOperation({ summary: 'Reject verification request' })
+  @ApiOperation({ summary: 'Reject provider verification' })
   @ApiResponse({ status: 200, description: 'Verification rejected' })
   async reject(
     @Param('id', ParseUuidPipe) id: string,
-    @Body('reviewerId') reviewerId: string,
+    @CurrentUser('id') reviewerId: string,
     @Body('reason') reason: string,
   ) {
     return this.verificationService.reject(id, reviewerId, reason);

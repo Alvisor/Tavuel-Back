@@ -28,6 +28,13 @@ export class ServicesController {
     return this.servicesService.create(body);
   }
 
+  @Get('categories')
+  @ApiOperation({ summary: 'Get all service categories with services' })
+  @ApiResponse({ status: 200, description: 'List of categories' })
+  async findCategories() {
+    return this.servicesService.findCategories();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all services' })
   @ApiResponse({ status: 200, description: 'List of services' })
