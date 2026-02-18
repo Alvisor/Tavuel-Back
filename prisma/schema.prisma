@@ -549,6 +549,15 @@ model PqrsAttachment {
   @@map("pqrs_attachments")
 }
 
+model SystemConfig {
+  id        String   @id @default("default")
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_config")
+}
+
 model Notification {
   id     String           @id @default(uuid()) @db.Uuid
   userId String           @db.Uuid

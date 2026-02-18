@@ -45,7 +45,7 @@ export class ReviewsService {
       data: {
         bookingId: dto.bookingId,
         clientId,
-        providerId: booking.providerId,
+        providerId: booking.providerId!,
         rating: dto.rating,
         comment: dto.comment,
       },
@@ -58,16 +58,16 @@ export class ReviewsService {
 
     // Update provider rating and totalReviews
     const aggregation = await this.prisma.review.aggregate({
-      where: { providerId: booking.providerId },
+      where: { providerId: booking.providerId! },
       _avg: { rating: true },
-      _count: { rating: true },
+      _count: { _all: true },
     });
 
     await this.prisma.provider.update({
-      where: { id: booking.providerId },
+      where: { id: booking.providerId! },
       data: {
-        rating: aggregation._avg.rating || 0,
-        totalReviews: aggregation._count.rating,
+        rating: aggregation._avg?.rating || 0,
+        totalReviews: aggregation._count?._all || 0,
       },
     });
 

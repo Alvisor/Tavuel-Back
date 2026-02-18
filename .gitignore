@@ -21,5 +21,8 @@ Thumbs.db
 # Test
 coverage/
 
+# Uploads (user-generated files)
+uploads/
+
 # Prisma
 prisma/migrations/**/migration_lock.toml
