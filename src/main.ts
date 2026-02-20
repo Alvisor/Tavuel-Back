@@ -27,18 +27,20 @@ async function bootstrap() {
     },
   });
 
-  // Ensure uploads directory exists
-  const uploadsDir = join(process.cwd(), 'uploads');
-  if (!existsSync(uploadsDir)) {
-    mkdirSync(uploadsDir, { recursive: true });
-  }
+  // Serve uploaded files locally only when S3/R2 is not configured
+  const useLocalStorage = !configService.get<string>('S3_ENDPOINT');
+  if (useLocalStorage) {
+    const uploadsDir = join(process.cwd(), 'uploads');
+    if (!existsSync(uploadsDir)) {
+      mkdirSync(uploadsDir, { recursive: true });
+    }
 
-  // Serve uploaded files statically
-  await app.register(fastifyStatic, {
-    root: uploadsDir,
-    prefix: '/uploads/',
-    decorateReply: false,
-  });
+    await app.register(fastifyStatic, {
+      root: uploadsDir,
+      prefix: '/uploads/',
+      decorateReply: false,
+    });
+  }
 
   // Global prefix
   const apiPrefix = configService.get<string>('API_PREFIX', 'v1');
@@ -56,12 +58,15 @@ async function bootstrap() {
 
   // CORS
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
+  const appUrl = configService.get<string>('APP_URL', 'http://localhost:8080');
   app.enableCors({
     origin: isProduction
-      ? [
-          configService.get<string>('FRONTEND_URL', 'http://localhost:3001'),
-          configService.get<string>('APP_URL', 'http://localhost:8080'),
-        ]
+      ? appUrl === '*'
+        ? true
+        : [
+            configService.get<string>('FRONTEND_URL', 'http://localhost:3001'),
+            appUrl,
+          ]
       : true,
     credentials: true,
   });

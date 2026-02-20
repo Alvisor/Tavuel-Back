@@ -23,7 +23,9 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/package.json ./
+COPY docker/start.sh ./start.sh
+RUN chmod +x ./start.sh
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+CMD ["./start.sh"]
