@@ -1,3 +1,12 @@
+// Debug: log env vars available at startup (remove after fixing)
+console.log('=== ENV VARS AT STARTUP ===');
+console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('S3_ENDPOINT exists:', !!process.env.S3_ENDPOINT);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('All env keys:', Object.keys(process.env).filter(k => !k.startsWith('npm_')).join(', '));
+console.log('=== END ENV VARS ===');
+
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
