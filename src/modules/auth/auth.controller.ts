@@ -29,7 +29,6 @@ import { ConfigService } from '@nestjs/config';
 
 const COOKIE_OPTIONS_BASE = {
   httpOnly: true,
-  sameSite: 'lax' as const,
   path: '/',
 };
 
@@ -50,22 +49,26 @@ export class AuthController {
     accessToken: string,
     refreshToken: string,
   ) {
+    const sameSite = this.isProduction ? ('none' as const) : ('lax' as const);
     reply.setCookie('tavuel_access', accessToken, {
       ...COOKIE_OPTIONS_BASE,
       secure: this.isProduction,
+      sameSite,
       maxAge: 15 * 60, // 15 minutes
     });
     reply.setCookie('tavuel_refresh', refreshToken, {
       ...COOKIE_OPTIONS_BASE,
       secure: this.isProduction,
+      sameSite,
       path: '/v1/auth/',
       maxAge: 4 * 60 * 60, // 4 hours
     });
   }
 
   private clearAuthCookies(reply: any) {
-    reply.clearCookie('tavuel_access', { path: '/' });
-    reply.clearCookie('tavuel_refresh', { path: '/v1/auth/' });
+    const sameSite = this.isProduction ? ('none' as const) : ('lax' as const);
+    reply.clearCookie('tavuel_access', { path: '/', sameSite, secure: this.isProduction });
+    reply.clearCookie('tavuel_refresh', { path: '/v1/auth/', sameSite, secure: this.isProduction });
   }
 
   // ─── Mobile endpoints (return tokens in body) ─────────
