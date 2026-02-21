@@ -6,8 +6,11 @@ import {
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import fastifyCookie from '@fastify/cookie';
+import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { AppModule } from './app.module';
@@ -19,6 +22,14 @@ async function bootstrap() {
   );
 
   const configService = app.get(ConfigService);
+
+  // Cookies (for HttpOnly auth cookies in admin panel)
+  await app.register(fastifyCookie);
+
+  // Security headers
+  await app.register(helmet, {
+    contentSecurityPolicy: false, // Managed per-client (Next.js, Flutter)
+  });
 
   // Register multipart for file uploads (10MB max)
   await app.register(multipart, {
@@ -44,7 +55,16 @@ async function bootstrap() {
 
   // Global prefix
   const apiPrefix = configService.get<string>('API_PREFIX', 'v1');
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: ['health'],
+  });
+
+  // Health check (outside versioned prefix for load balancers)
+  const fastifyInstance = app.getHttpAdapter().getInstance();
+  fastifyInstance.get('/health', async () => ({ status: 'ok' }));
+
+  // Global exception filter (prevents stack trace leaks)
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Validation
   app.useGlobalPipes(
@@ -58,21 +78,24 @@ async function bootstrap() {
 
   // CORS
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
-  const appUrl = configService.get<string>('APP_URL', 'http://localhost:8080');
   app.enableCors({
     origin: isProduction
-      ? appUrl === '*'
-        ? true
-        : [
-            configService.get<string>('FRONTEND_URL', 'http://localhost:3001'),
-            appUrl,
-          ]
+      ? [
+          configService.get<string>('FRONTEND_URL', 'https://tavuel-front.vercel.app'),
+          configService.get<string>('APP_URL', 'https://tavuel.com'),
+        ].filter(url => url && url !== '*')
       : true,
     credentials: true,
   });
 
-  // Swagger
-  if (configService.get<string>('NODE_ENV') !== 'production') {
+  // Validate critical secrets
+  const jwtSecret = configService.get<string>('JWT_SECRET', '');
+  if (isProduction && jwtSecret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters in production');
+  }
+
+  // Swagger (only in explicit development mode)
+  if (configService.get<string>('NODE_ENV') === 'development') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Tavuel API')
       .setDescription('API para la plataforma de servicios del hogar Tavuel')

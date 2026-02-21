@@ -189,10 +189,11 @@ model User {
   avatarUrl     String?
   role               UserRole   @default(CLIENT)
   status             UserStatus @default(ACTIVE)
-  wantsToBeProvider  Boolean    @default(false)
-  activeMode         UserRole   @default(CLIENT)
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
+  wantsToBeProvider      Boolean    @default(false)
+  activeMode             UserRole   @default(CLIENT)
+  refreshTokenHash       String?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
 
   // Relations
   socialAccounts SocialAccount[]

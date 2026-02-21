@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -98,6 +99,44 @@ export class AuthService {
     };
   }
 
+  async adminLogin(dto: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Account is not active');
+    }
+
+    if (user.role !== 'ADMIN') {
+      throw new UnauthorizedException('Access denied');
+    }
+
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+      },
+      ...tokens,
+    };
+  }
+
   async refreshToken(refreshToken: string) {
     try {
       const payload = this.jwtService.verify(refreshToken, {
@@ -116,6 +155,17 @@ export class AuthService {
         throw new UnauthorizedException('User not found or inactive');
       }
 
+      // Verify the refresh token matches the one stored in DB
+      const tokenHash = this.hashToken(refreshToken);
+      if (user.refreshTokenHash && user.refreshTokenHash !== tokenHash) {
+        // Token was rotated — possible theft. Invalidate all tokens.
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { refreshTokenHash: null },
+        });
+        throw new UnauthorizedException('Token has been revoked');
+      }
+
       return this.generateTokens(user.id, user.email, user.role);
     } catch (error) {
       if (error instanceof UnauthorizedException) throw error;
@@ -123,8 +173,11 @@ export class AuthService {
     }
   }
 
-  async logout(_userId: string) {
-    // TODO: When Redis is integrated, invalidate refresh token here
+  async logout(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshTokenHash: null },
+    });
     return { message: 'Logged out successfully' };
   }
 
@@ -144,7 +197,6 @@ export class AuthService {
     );
 
     // TODO: Send email with reset link containing the token
-    console.log(`[DEV] Password reset token for ${email}: ${resetToken}`);
 
     return { message: 'If the email exists, a reset link has been sent' };
   }
@@ -303,6 +355,10 @@ export class AuthService {
     };
   }
 
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
   private async generateTokens(userId: string, email: string, role: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
@@ -324,6 +380,12 @@ export class AuthService {
         },
       ),
     ]);
+
+    // Store hash of refresh token for rotation validation
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshTokenHash: this.hashToken(refreshToken) },
+    });
 
     return { accessToken, refreshToken };
   }

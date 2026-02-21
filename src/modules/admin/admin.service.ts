@@ -1026,8 +1026,7 @@ export class AdminService {
     lastName: string;
     password: string;
   }) {
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(body.password, salt);
+    const passwordHash = await bcrypt.hash(body.password, 12);
 
     return this.prisma.user.create({
       data: {
